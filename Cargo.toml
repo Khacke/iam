@@ -2,5 +2,6 @@
 resolver = "2"
 
 members = [
-    "data_downloader"
+    "data_downloader",
+    "manager"
 ]
