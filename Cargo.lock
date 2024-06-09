@@ -393,6 +393,7 @@ dependencies = [
 name = "data_downloader"
 version = "0.1.0"
 dependencies = [
+ "futures",
  "polars",
  "reqwest",
  "serde",

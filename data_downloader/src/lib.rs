@@ -37,33 +37,25 @@ impl Requester {
         // TODO: multithreading?
         info!("Beginning to download historical data:\n\tsymbol: {symbol}\n\tinterval: {interval}\n\tstart_time: {start_time}\n\tend_time: {end_time}\n\toutput_path: {output_path}");
         
-        let mut data: Vec<Kline> = vec![];
         let limit = 1000;
 
         let interval_sec = interval.parse::<Interval>().unwrap() as usize;
         let interval_ms = interval_sec * 1000;
 
-        let mut current_start_time = start_time;
-        let mut current_end_time = std::cmp::min(current_start_time + limit * interval_ms, end_time);
-        debug!("starting current_end_time:{current_end_time}");
+        let chunks = (start_time..end_time)
+            .step_by(limit*interval_ms)
+            .map(|current_start_time| {
+                let current_end_time = std::cmp::min(current_start_time + limit * interval_ms, end_time);
+                self.download_chunk(symbol, interval, current_start_time, current_end_time, limit)
+            })
+            .collect::<Vec<_>>();
 
-        while current_start_time < end_time {
-            data.extend(
-                self.download_chunk(
-                    symbol,
-                    interval,
-                    current_start_time,
-                    current_end_time,
-                    limit,
-                )
-                .await,
-            );
 
-            current_start_time = current_end_time + interval_ms;
-            current_end_time = std::cmp::min(current_start_time + limit * interval_ms, end_time);
-            debug!("modified current_start_time:{current_start_time}");
-            debug!("modified current_end_time:{current_end_time}");
-        }
+        let data: Vec<Kline> = futures::future::join_all(chunks)
+            .await
+            .into_iter()
+            .flatten()
+            .collect();
 
         self.save_to_file(output_path, data).unwrap();
     }
@@ -131,5 +123,5 @@ impl Requester {
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    // cant test this 
 }
