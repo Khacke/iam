@@ -1,10 +1,12 @@
 #![crate_name = "data_downloader"]
 use polars::{df, io::parquet::ParquetWriter};
+use polars::prelude::*;
 use reqwest::{Client, Url};
 
 mod error;
 mod interval;
 mod kline;
+mod util;
 
 use error::{Error, Result};
 use interval::Interval;
@@ -107,9 +109,14 @@ impl Requester {
             "quote_asset_volume" => data.iter().map(|k| k.quote_asset_volume).collect::<Vec<f64>>(),
             "trade_number" => data.iter().map(|k| k.trade_number as u64).collect::<Vec<u64>>(),
             "buy_base" => data.iter().map(|k| k.buy_base).collect::<Vec<f64>>(),
-            "buy_quote" => data.iter().map(|k| k.buy_quote).collect::<Vec<f64>>()
+            "buy_quote" => data.iter().map(|k| k.buy_quote).collect::<Vec<f64>>(),
         )
         .unwrap();
+
+        let rsi_values = util::calculate_rsi(&df, 14);
+        let mut extended_rsi = vec![None; df.height() - rsi_values.len()];
+        extended_rsi.extend(rsi_values.iter().map(|v| v.clone()).map(Some));
+        df.with_column(Series::new("RSI[14]", &extended_rsi)).unwrap();
         //TODO: error handling
         let mut file = std::fs::File::create(output_path).expect("Could not create file");
         ParquetWriter::new(&mut file)
