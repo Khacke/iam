@@ -1,3 +1,6 @@
+// IAMbot Data Downloader 
+// Created by Jenei Andras 2024
+
 #![crate_name = "data_downloader"]
 use polars::{df, io::parquet::ParquetWriter};
 use polars::prelude::*;
@@ -112,10 +115,10 @@ impl Requester {
             "buy_quote" => data.iter().map(|k| k.buy_quote).collect::<Vec<f64>>(),
         )
         .unwrap();
-
+        // TODO: not the task of the data_downloader, implement elsewhere
         let rsi_values = util::calculate_rsi(&df, 14);
         let mut extended_rsi = vec![None; df.height() - rsi_values.len()];
-        extended_rsi.extend(rsi_values.iter().map(|v| v.clone()).map(Some));
+        extended_rsi.extend(rsi_values.iter().cloned().map(Some));
         df.with_column(Series::new("RSI[14]", &extended_rsi)).unwrap();
         //TODO: error handling
         let mut file = std::fs::File::create(output_path).expect("Could not create file");

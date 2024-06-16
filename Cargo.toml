@@ -3,5 +3,6 @@ resolver = "2"
 
 members = [
     "data_downloader",
-    "manager"
+    "manager",
+    "ipc_messager"
 ]
